@@ -35,7 +35,7 @@ npm run preview
 
 De build komt in `dist/`. Met `preview` bekijk je die build lokaal.
 
-## Automatische controles op GitHub
+## Automatische controles op GitHub :)
 
 De workflow `.github/workflows/ci.yml` draait bij iedere push en pull request.
 Je kunt hem ook handmatig starten via het tabblad **Actions** op GitHub.
