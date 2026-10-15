@@ -35,6 +35,17 @@ npm run preview
 
 De build komt in `dist/`. Met `preview` bekijk je die build lokaal.
 
+## Automatische controles op GitHub
+
+De workflow `.github/workflows/ci.yml` draait bij iedere push en pull request.
+Je kunt hem ook handmatig starten via het tabblad **Actions** op GitHub.
+Hij voert `npm install` uit, start `npm run dev` en controleert of de devserver
+binnen 30 seconden via HTTP bereikbaar is. Daarna wordt de server gestopt.
+Deze controle hangt niet af van specifieke pagina-inhoud of functies.
+
+Na het committen en pushen van deze bestanden verschijnen de resultaten onder
+**Actions → Applicatie controleren**.
+
 ## Editor
 
 Voor VS Code staat de extensie **Vue - Official** bij de aanbevolen extensies.

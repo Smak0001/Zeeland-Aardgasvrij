@@ -1,0 +1,50 @@
+name: Applicatie controleren
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  start-app:
+    name: Dependencies installeren en devserver starten
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v6
+
+      - name: Node.js instellen
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Afhankelijkheden installeren
+        run: npm install
+
+      - name: Controleren of npm run dev werkt
+        shell: bash
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5173 --strictPort > dev-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..30}; do
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat dev-server.log
+              exit 1
+            fi
+            if curl --fail --silent http://127.0.0.1:5173/ > /dev/null; then
+              echo "Devserver is gestart en de app is bereikbaar."
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat dev-server.log
+          echo "Devserver is na 30 seconden niet bereikbaar."
+          exit 1
