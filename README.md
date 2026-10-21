@@ -16,15 +16,20 @@ worden tijdens het ontwikkelen direct zichtbaar.
 
 ## Waar begin je?
 
-- `src/App.vue`: het startscherm en de indeling van je app.
-- `src/components/StarterCounter.vue`: een herbruikbaar voorbeeldcomponent met
-  reactieve JavaScript-state en klikacties.
+- `src/App.vue`: de gedeelde navigatie, pagina-indeling en footer.
+- `src/views/HomePage.vue`: de korte introductie op de homepage.
+- `src/views/OpportunityMapPage.vue`: de interactieve kaart voor aardgasvrije wijken.
+- `src/router.js`: de routes tussen de pagina’s; hash-routes werken ook op statische hosting.
 - `src/assets/main.css`: de algemene styling, ook voor mobiel.
 - `src/main.js`: start de Vue-app.
 - `public/`: bestanden die rechtstreeks beschikbaar moeten zijn, zoals een favicon.
 
 Maak nieuwe componenten in `src/components/` en importeer ze in `App.vue`.
 De basis gebruikt gewone JavaScript en CSS. Voeg extra libraries toe zodra je ze nodig hebt.
+
+De kansenkaart gebruikt Leaflet en OpenStreetMap-achtergrondtegels. Voor de
+achtergrondkaart is internet nodig. Er zijn nog geen gebiedsgegevens of
+kansbeoordelingen gekoppeld.
 
 ## Productiebuild
 
