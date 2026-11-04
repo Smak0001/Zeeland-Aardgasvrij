@@ -19,8 +19,10 @@ worden tijdens het ontwikkelen direct zichtbaar.
 - `src/App.vue`: de gedeelde navigatie, pagina-indeling en footer.
 - `src/views/HomePage.vue`: de korte introductie op de homepage.
 - `src/views/OpportunityMapPage.vue`: de interactieve kaart voor aardgasvrije wijken.
-- `src/lib/neighborhoods.js`: zoeken op buurtnaam en filteren op gemeente.
-- `public/data/zeeland-buurten-2026.geojson`: echte CBS-buurtgrenzen voor Zeeland.
+- `src/lib/neighborhoods.js`: zoeken op naam en filteren op gemeente.
+- `src/lib/opportunities.js`: de kansberekening (kansScore, klassen, wijkcijfers en bewonersindicatie).
+- `public/data/zeeland-buurten-2026.geojson` en `zeeland-wijken-2026.geojson`: echte CBS-grenzen voor Zeeland.
+- `public/data/zeeland-kansen.json`: kosten, strategie en woningen per buurt uit de PBL Startanalyse 2026.
 - `src/router.js`: de routes tussen de pagina’s; hash-routes werken ook op statische hosting.
 - `src/assets/main.css`: de algemene styling, ook voor mobiel.
 - `src/main.js`: start de Vue-app.
@@ -30,22 +32,38 @@ Maak nieuwe componenten in `src/components/` en importeer ze in `App.vue`.
 De basis gebruikt gewone JavaScript en CSS. Voeg extra libraries toe zodra je ze nodig hebt.
 
 De kansenkaart gebruikt Leaflet en OpenStreetMap-achtergrondtegels. Voor de
-achtergrondkaart is internet nodig. De buurtgrenzen zijn lokaal beschikbaar,
-inclusief zoeken op buurtnaam, filteren op gemeente en buurtselectie.
-Er zijn nog geen kansbeoordelingen gekoppeld.
+achtergrondkaart is internet nodig. Grenzen en kansgegevens zijn lokaal beschikbaar.
+Je kunt wisselen tussen buurten en wijken, filteren op gemeente en zoeken op naam.
 
-## Buurtgrenzen
+## Grenzen
 
 De kaart gebruikt de [CBS Wijk- en Buurtkaart 2026 via PDOK](https://api.pdok.nl/cbs/wijken-en-buurten-2026/ogc/v1).
-De snapshot bevat de buurten van de dertien Zeeuwse gemeenten, zonder watergebieden.
+De snapshots bevatten de buurten en wijken van de dertien Zeeuwse gemeenten, zonder watergebieden.
 Alleen grenzen, namen en gebiedscodes worden opgeslagen; coördinaten worden afgerond
-op zes decimalen. Dit zijn geen berekende aardgasvrij-kansen.
+op zes decimalen.
 
 Ververs de snapshot met `npm run data:update` (internet nodig). De bron,
 het indelingsjaar en het ophaalmoment staan in de metadata van het GeoJSON-bestand.
 Een gewone build en de GitHub-controle gebruiken het opgeslagen bestand.
 
-Controleer zoeken, filtering en de brongegevens met `node --test tests/neighborhoods.test.js`.
+## Kansen (PBL Startanalyse 2026)
+
+`npm run data:kansen` haalt de buurtbestanden van de
+[PBL Startanalyse aardgasvrije buurten 2026](https://dataportaal.pbl.nl/Startanalyse_aardgasvrije_buurten/2026)
+op (een ZIP per gemeente, in `data/startanalyse/2026/`, niet in git) en schrijft
+`public/data/zeeland-kansen.json`. Met `--vernieuw` worden de ZIP's opnieuw gedownload
+(`npm run data:kansen -- --vernieuw`). Het script heeft `unzip` nodig.
+
+Hoe de kansscore, de klassen, de wijkcijfers en de bewonersindicatie precies worden
+berekend, met welke PBL-velden en welke aannames, staat in
+[`docs/BEREKENING.md`](docs/BEREKENING.md). Op de kaartpagina staat een eenvoudige
+uitleg voor inwoners.
+
+## Tests
+
+```sh
+npm test
+```
 
 ## Productiebuild
 

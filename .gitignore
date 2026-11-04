@@ -41,3 +41,6 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Ruwe PBL-downloads; npm run data:kansen haalt ze opnieuw op
+data/startanalyse/

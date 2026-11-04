@@ -2,11 +2,11 @@ function normalize(value) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('nl').trim()
 }
 
-export function filterNeighborhoods(features, municipalityCode, query) {
+export function filterNeighborhoods(features, municipalityCode, query, nameKey = 'buurtnaam') {
   const search = normalize(query)
   return features.filter(({ properties }) =>
     (!municipalityCode || properties.gemeentecode === municipalityCode)
-    && (!search || normalize(properties.buurtnaam).includes(search)))
+    && (!search || normalize(properties[nameKey]).includes(search)))
 }
 
 export function getMunicipalities(features) {
