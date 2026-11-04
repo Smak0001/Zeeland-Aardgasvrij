@@ -20,6 +20,14 @@ export const STRATEGIEEN = {
   S4: 'Hybride warmtepomp met groen gas',
 }
 
+// Gemeenten kiezen in hun warmteplan een route per wijk. S2 en S3 zijn voor hen
+// allebei een collectief warmtenet; het verschil zit in temperatuur en bron.
+export const ROUTES = {
+  warmtenet: { label: 'Warmtenet', strategieen: ['S2', 'S3'] },
+  'all-electric': { label: 'All-electric', strategieen: ['S1'] },
+  hybride: { label: 'Hybride (groen gas)', strategieen: ['S4'] },
+}
+
 // Labels B en D zijn het isolatieniveau waar PBL de woningen in die variant naartoe brengt.
 export const VARIANTEN = {
   s1a: 'Luchtwarmtepomp; woningen isoleren tot label B',
@@ -54,6 +62,16 @@ export const AANNAMES = {
 export function strategieVan(variant) {
   const match = /^s([1-4])/i.exec(variant ?? '')
   return match ? `S${match[1]}` : null
+}
+
+export function routeVan(variant) {
+  const strategie = strategieVan(variant)
+  return Object.keys(ROUTES).find((route) => ROUTES[route].strategieen.includes(strategie)) ?? null
+}
+
+// Een buurt heeft één route; een wijk de route met de meeste woningen.
+export function routeVanGebied(gebied) {
+  return gebied.route !== undefined ? gebied.route : routeVan(gebied.variant)
 }
 
 // Percentielrang tussen 0 (laagste waarde) en 1 (hoogste waarde). Gelijke waarden
@@ -124,6 +142,16 @@ export function aggregeerWijken(buurten) {
     }
     const variant = [...woningenPerStrategie].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
     const woningen = items.reduce((som, buurt) => som + buurt.woningen, 0)
+    // Aandeel woningen per route, zodat zichtbaar is dat een wijk gemengd kan zijn.
+    const routeWoningen = {}
+    for (const [buurtVariant, aantal] of woningenPerStrategie) {
+      const route = routeVan(buurtVariant)
+      routeWoningen[route] = (routeWoningen[route] ?? 0) + aantal
+    }
+    const woningenMetRoute = Object.values(routeWoningen).reduce((som, aantal) => som + aantal, 0)
+    const routeVerdeling = Object.fromEntries(Object.entries(routeWoningen)
+      .map(([route, aantal]) => [route, woningenMetRoute ? aantal / woningenMetRoute : 0])
+      .sort((a, b) => b[1] - a[1]))
     return {
       code,
       naam: items[0].wijknaam,
@@ -133,6 +161,8 @@ export function aggregeerWijken(buurten) {
       weq: items.reduce((som, buurt) => som + buurt.weq, 0),
       kosten: weqMetKosten ? metKosten.reduce((som, buurt) => som + buurt.kostenTotaal, 0) / weqMetKosten : null,
       variant,
+      route: Object.keys(routeVerdeling)[0] ?? null,
+      routeVerdeling,
       aantalBuurten: items.length,
       jaarlastenWoning: gewogenGemiddelde(items, 'jaarlastenWoning', 'woningen'),
       gasVoor: gewogenGemiddelde(items, 'gasVoor', 'woningen'),

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
-  aggregeerWijken, beoordeel, bewonersIndicatie, klasseVan, percentielRangen, strategieVan,
+  aggregeerWijken, beoordeel, bewonersIndicatie, klasseVan, percentielRangen, routeVan, routeVanGebied, strategieVan,
 } from '../src/lib/opportunities.js'
 
 const kansen = JSON.parse(readFileSync(new URL('../public/data/zeeland-kansen.json', import.meta.url)))
@@ -55,6 +55,34 @@ test('een wijk telt de meerkosten van zijn buurten op en deelt door de woningequ
   assert.equal(wijk.woningen, 45)
   assert.equal(wijk.variant, 's4b')
   assert.equal(wijk.aantalBuurten, 3)
+  assert.deepEqual(wijk.routeVerdeling, { hybride: 0.75, 'all-electric': 0.25 })
+  assert.equal(wijk.route, 'hybride')
+})
+
+test('een wijk krijgt de route met de meeste woningen, ook als die over varianten verspreid zijn', () => {
+  const [wijk] = aggregeerWijken([
+    buurt('BU1', 100, 30, { wijkcode: 'WK1', wijknaam: 'Wijk', weq: 30, kostenTotaal: 3000, variant: 's2d' }),
+    buurt('BU2', 100, 30, { wijkcode: 'WK1', wijknaam: 'Wijk', weq: 30, kostenTotaal: 3000, variant: 's3g' }),
+    buurt('BU3', 100, 40, { wijkcode: 'WK1', wijknaam: 'Wijk', weq: 40, kostenTotaal: 4000, variant: 's4b' }),
+  ])
+  assert.equal(wijk.variant, 's4b')
+  assert.equal(wijk.route, 'warmtenet')
+  assert.equal(routeVanGebied(wijk), 'warmtenet')
+  assert.equal(routeVanGebied({ variant: 's1a' }), 'all-electric')
+})
+
+test('routes groeperen de PBL-strategieën zoals een warmteplan dat doet', () => {
+  assert.equal(routeVan('s1b'), 'all-electric')
+  assert.equal(routeVan('s2d'), 'warmtenet')
+  assert.equal(routeVan('s3g'), 'warmtenet')
+  assert.equal(routeVan('s4b'), 'hybride')
+  assert.equal(routeVan(null), null)
+})
+
+test('elke buurt met kosten heeft een route', () => {
+  for (const item of kansen.buurten) {
+    if (item.kosten !== null) assert.ok(routeVan(item.variant), `${item.code} zonder route`)
+  }
 })
 
 test('de bewonersindicatie rekent gasbesparing min extra stroom min jaarlasten', () => {

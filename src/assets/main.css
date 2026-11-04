@@ -129,6 +129,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .method-notes li { margin-block: 0.4rem; }
 .map-source { font-size: 0.8rem; color: var(--color-muted); }
 .map-load-error { padding-block: 1rem; font-size: 0.9rem; }
+.route-note { max-width: 820px; padding: 0.7rem 1rem; background: #fff4e8; border-left: 4px solid #fdae6b; border-radius: 0.3rem; font-size: 0.85rem; }
 
 @media (max-width: 850px) {
   .map-heading { align-items: start; flex-direction: column; }

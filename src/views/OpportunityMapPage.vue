@@ -4,8 +4,8 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { filterNeighborhoods, getMunicipalities } from '../lib/neighborhoods.js'
 import {
-  AANNAMES, GEWICHT_KOSTEN, GEWICHT_OMVANG, KLASSEN, MIN_WONINGEN, STRATEGIEEN, VARIANTEN,
-  aggregeerWijken, beoordeel, bewonersIndicatie, strategieVan,
+  AANNAMES, GEWICHT_KOSTEN, GEWICHT_OMVANG, KLASSEN, MIN_WONINGEN, ROUTES, STRATEGIEEN, VARIANTEN,
+  aggregeerWijken, beoordeel, bewonersIndicatie, routeVanGebied, strategieVan,
 } from '../lib/opportunities.js'
 
 const levels = {
@@ -22,6 +22,7 @@ const level = ref('buurt')
 const features = shallowRef({ buurt: [], wijk: [] })
 const records = shallowRef({ buurt: new Map(), wijk: new Map() })
 const municipalityCode = ref('')
+const route = ref('')
 const search = ref('')
 const selectedCode = ref(null)
 const showAll = ref(false)
@@ -32,7 +33,18 @@ const tileError = ref(false)
 const config = computed(() => levels[level.value])
 const currentFeatures = computed(() => features.value[level.value])
 const municipalities = computed(() => getMunicipalities(features.value.buurt))
-const filtered = computed(() => filterNeighborhoods(currentFeatures.value, municipalityCode.value, search.value, config.value.name))
+const beforeRoute = computed(() => filterNeighborhoods(currentFeatures.value, municipalityCode.value, search.value, config.value.name))
+const filtered = computed(() => (route.value
+  ? beforeRoute.value.filter((feature) => routeOf(feature) === route.value)
+  : beforeRoute.value))
+const routeCounts = computed(() => {
+  const counts = new Map(Object.keys(ROUTES).map((key) => [key, 0]))
+  for (const feature of beforeRoute.value) {
+    const key = routeOf(feature)
+    if (counts.has(key)) counts.set(key, counts.get(key) + 1)
+  }
+  return counts
+})
 const ranked = computed(() => filtered.value
   .map((feature) => ({ feature, record: recordOf(feature) }))
   .filter(({ record }) => record?.kansScore != null)
@@ -46,7 +58,12 @@ const classCounts = computed(() => {
 const selectedFeature = computed(() => filtered.value.find((feature) => codeOf(feature) === selectedCode.value))
 const selected = computed(() => selectedFeature.value && recordOf(selectedFeature.value))
 const indicatie = computed(() => selected.value && bewonersIndicatie(selected.value))
-const hasFilters = computed(() => Boolean(municipalityCode.value || search.value))
+const hasFilters = computed(() => Boolean(municipalityCode.value || route.value || search.value))
+const routeMix = computed(() => {
+  const verdeling = selected.value?.routeVerdeling
+  if (!verdeling || Object.keys(verdeling).length < 2) return null
+  return Object.entries(verdeling).map(([key, share]) => `${Math.round(share * 100)}% ${ROUTES[key].label.toLowerCase()}`).join(', ')
+})
 
 const request = new AbortController()
 const cachedLayers = { buurt: new Map(), wijk: new Map() }
@@ -67,6 +84,15 @@ function recordOf(feature) {
 
 function klasseOf(feature) {
   return recordOf(feature)?.klasse ?? 'onbekend'
+}
+
+function routeOf(feature) {
+  const record = recordOf(feature)
+  return record ? routeVanGebied(record) : null
+}
+
+function routeLabel(key) {
+  return ROUTES[key]?.label ?? 'Geen route'
 }
 
 function strategyText(variant) {
@@ -114,6 +140,7 @@ function showFilteredAreas() {
 
 function resetFilters() {
   municipalityCode.value = ''
+  route.value = ''
   search.value = ''
   selectedCode.value = null
 }
@@ -232,6 +259,15 @@ onBeforeUnmount(() => {
           </option>
         </select>
       </label>
+      <label for="route-filter">
+        Goedkoopste route
+        <select id="route-filter" v-model="route" :disabled="loading || loadError">
+          <option value="">Alle routes</option>
+          <option v-for="(item, key) in ROUTES" :key="key" :value="key">
+            {{ item.label }} ({{ routeCounts.get(key) }})
+          </option>
+        </select>
+      </label>
       <label for="area-search">
         Zoek op {{ config.singular }}naam
         <input id="area-search" v-model="search" type="search" :placeholder="level === 'buurt' ? 'Bijvoorbeeld Griffioen' : 'Bijvoorbeeld Mortiere'" :disabled="loading || loadError">
@@ -244,7 +280,12 @@ onBeforeUnmount(() => {
       De kaart of de kansgegevens konden niet worden geladen.
       <button type="button" @click="loadData">Opnieuw proberen</button>
     </div>
-    <p v-else class="map-data-status" role="status">{{ filtered.length }} {{ config.plural }} gevonden</p>
+    <p v-else class="map-data-status" role="status">
+      {{ filtered.length }} {{ config.plural }} gevonden<template v-if="route"> waar {{ routeLabel(route).toLowerCase() }} de goedkoopste route is</template>
+    </p>
+    <p v-if="route === 'hybride' && !loading" class="route-note">
+      Let op: een hybride warmtepomp stookt op koude dagen bij met groen gas. PBL kiest deze route alleen als de buurt groen gas toegewezen krijgt, en groen gas is schaars.
+    </p>
 
     <div class="neighborhood-layout">
       <div class="map-panel">
@@ -266,7 +307,7 @@ onBeforeUnmount(() => {
         <ol v-if="shownRanking.length" class="ranking-list">
           <li v-for="{ feature, record } in shownRanking" :key="codeOf(feature)">
             <button type="button" :aria-pressed="selectedCode === codeOf(feature)" @click="selectArea(feature)">
-              <span class="ranking-name">{{ nameOf(feature) }} <small>{{ feature.properties.gemeentenaam }}</small></span>
+              <span class="ranking-name">{{ nameOf(feature) }} <small>{{ feature.properties.gemeentenaam }} · {{ routeLabel(routeOf(feature)) }}</small></span>
               <span class="ranking-bar" aria-hidden="true">
                 <span :style="{ width: `${score(record.kansScore)}%`, background: klassen.get(record.klasse).color }"></span>
               </span>
@@ -305,11 +346,17 @@ onBeforeUnmount(() => {
             <div><span>Kansscore</span><strong>{{ score(selected.kansScore) }} / 100</strong></div>
             <div><span>Extra kosten per woning per jaar</span><strong>{{ euro.format(selected.kosten) }}</strong></div>
             <div><span>Woningen</span><strong>{{ number.format(selected.woningen) }}</strong></div>
-            <div><span>Goedkoopste route</span><strong>{{ strategyText(selected.variant) }}</strong></div>
+            <div><span>Goedkoopste route</span><strong>{{ routeLabel(routeVanGebied(selected)) }}</strong></div>
           </div>
           <p class="advice-text">
-            <strong>Route volgens PBL:</strong> {{ VARIANTEN[selected.variant] ?? selected.variant }}.
-            <template v-if="level === 'wijk'"> Dit is de route voor de meeste woningen in deze wijk; elke buurt kan een eigen route hebben.</template>
+            <template v-if="level === 'wijk'">
+              <strong>Route:</strong> {{ routeLabel(routeVanGebied(selected)) }} is de goedkoopste route voor de meeste woningen in deze wijk.
+              <template v-if="routeMix"> Verdeling over de woningen: {{ routeMix }}.</template>
+              Grootste variant: {{ VARIANTEN[selected.variant] ?? selected.variant }}.
+            </template>
+            <template v-else>
+              <strong>Route volgens PBL:</strong> {{ strategyText(selected.variant) }}. {{ VARIANTEN[selected.variant] ?? selected.variant }}.
+            </template>
             Kosten­score {{ score(selected.kostenScore) }} (goedkoper dan {{ score(selected.kostenScore) }}% van de Zeeuwse {{ config.plural }})
             en omvangscore {{ score(selected.omvangScore) }} (meer woningen dan {{ score(selected.omvangScore) }}%).
           </p>
@@ -378,6 +425,11 @@ onBeforeUnmount(() => {
         <li>Dit is een eerste verkenning, geen besluit. Of een wijk echt van het gas af gaat, beslist de gemeente samen met inwoners.</li>
         <li>Dingen als draagvlak in de buurt en ruimte op het stroomnet zitten nog niet in de score.</li>
         <li>Een wijk is een groep buurten. Bij wijken tellen we de buurten bij elkaar op en vergelijken we wijken met elkaar.</li>
+        <li>
+          De <strong>goedkoopste route</strong> is de manier van verwarmen die volgens PBL het minst kost:
+          een <strong>warmtenet</strong> (warmte via leidingen in de wijk), <strong>all-electric</strong> (een eigen elektrische warmtepomp)
+          of <strong>hybride</strong> (een warmtepomp die op koude dagen bijstookt met groen gas). Bij een wijk is dat de route voor de meeste woningen.
+        </li>
       </ul>
       <p class="map-source">
         Bron kosten en woningen: <a href="https://dataportaal.pbl.nl/Startanalyse_aardgasvrije_buurten/2026">PBL Startanalyse aardgasvrije buurten 2026</a> (CC BY 4.0).

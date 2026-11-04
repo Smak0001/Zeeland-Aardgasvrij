@@ -198,6 +198,32 @@ De velden voor de bewonersindicatie (`jaarlastenWoning`, `gasVoor`, `elekVoor`, 
 Daarna krijgen de wijken een eigen kansScore en klasse, met dezelfde formule als hierboven,
 maar alleen vergeleken met andere wijken.
 
+### Routes per wijk
+
+Gemeenten kiezen in hun warmteplan per wijk een route. Op de kaart kun je filteren op de
+goedkoopste route. De vier PBL-strategieën zijn daarvoor gegroepeerd in drie routes
+(`ROUTES` en `routeVan` in de code):
+
+| Route | PBL-strategieën | Buurten | Wijken |
+| --- | --- | --- | --- |
+| Warmtenet | S2 + S3 | 103 | 27 |
+| All-electric | S1 | 36 | 6 |
+| Hybride (groen gas) | S4 | 311 | 135 |
+| geen route | — | 3 | 1 |
+
+S2 en S3 zijn samengevoegd: voor een gemeente zijn het allebei collectieve warmtenetten,
+het verschil zit in temperatuur en warmtebron. In het advies per buurt staat de precieze variant.
+
+- **Buurt:** de route van PBL's goedkoopste variant (`V01`).
+- **Wijk:** de route met de meeste woningen (`route`), berekend over de buurten met kosten.
+  Het aandeel woningen per route staat in `routeVerdeling`. Dat kan afwijken van de
+  grootste losse variant (`variant`). Voorbeeld: 30% `s2d` + 30% `s3g` + 40% `s4b` geeft
+  route **warmtenet** (60%), terwijl `s4b` de grootste variant is.
+  56 van de 169 wijken hebben buurten met verschillende routes.
+
+Het routefilter verandert de scores niet. Een gebied houdt zijn kansScore ten opzichte
+van heel Zeeland; je ziet alleen minder gebieden.
+
 ## 6. Bewonersindicatie
 
 De bewonersindicatie is een eerste inschatting voor een *gemiddelde* woning in het gebied,
