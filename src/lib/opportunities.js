@@ -173,6 +173,25 @@ export function aggregeerWijken(buurten) {
   })
 }
 
+// Kerncijfers voor heel Zeeland, op buurtniveau, voor de homepage.
+export function zeelandCijfers(buurten) {
+  const scores = beoordeel(buurten)
+  const kansrijk = buurten.filter((buurt) => ['zeer-kansrijk', 'kansrijk'].includes(scores.get(buurt.code).klasse))
+  const woningenPerRoute = Object.fromEntries(Object.keys(ROUTES).map((route) => [route, 0]))
+  for (const buurt of buurten) {
+    const route = routeVan(buurt.variant)
+    if (route) woningenPerRoute[route] += buurt.woningen
+  }
+  const som = (items) => items.reduce((totaal, buurt) => totaal + buurt.woningen, 0)
+  return {
+    woningen: som(buurten),
+    buurten: buurten.length,
+    kansrijkeBuurten: kansrijk.length,
+    kansrijkeWoningen: som(kansrijk),
+    woningenPerRoute,
+  }
+}
+
 // Eerste inschatting voor een gemiddelde woning in het gebied. Alle bedragen per jaar.
 export function bewonersIndicatie(gebied, aannames = AANNAMES) {
   const velden = ['jaarlastenWoning', 'gasVoor', 'elekVoor', 'gasNa', 'elekNa']

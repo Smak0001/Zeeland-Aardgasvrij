@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   aggregeerWijken, beoordeel, bewonersIndicatie, klasseVan, percentielRangen, routeVan, routeVanGebied, strategieVan,
+  zeelandCijfers,
 } from '../src/lib/opportunities.js'
 
 const kansen = JSON.parse(readFileSync(new URL('../public/data/zeeland-kansen.json', import.meta.url)))
@@ -119,4 +120,27 @@ test('het kansenbestand dekt elke buurt op de kaart en gebruikt de PBL-laagste k
     assert.ok(Number.isInteger(item.woningen))
     if (item.kosten !== null) assert.ok(strategieVan(item.variant), `${item.code} zonder strategie`)
   }
+})
+
+test('de Zeeuwse kerncijfers tellen woningen, kansrijke buurten en routes op', () => {
+  const cijfers = zeelandCijfers([
+    buurt('A', 100, 50, { variant: 's2d' }),
+    buurt('B', 200, 100, { variant: 's4b' }),
+    buurt('C', 300, 150, { variant: 's1a' }),
+    buurt('D', null, 5, { variant: null }),
+  ])
+  assert.equal(cijfers.woningen, 305)
+  assert.equal(cijfers.buurten, 4)
+  // Alleen A heeft een kansScore van 0,66 of hoger (0,7).
+  assert.equal(cijfers.kansrijkeBuurten, 1)
+  assert.equal(cijfers.kansrijkeWoningen, 50)
+  assert.deepEqual(cijfers.woningenPerRoute, { warmtenet: 50, 'all-electric': 150, hybride: 100 })
+})
+
+test('de kerncijfers kloppen met het kansenbestand', () => {
+  const cijfers = zeelandCijfers(kansen.buurten)
+  assert.equal(cijfers.buurten, kaart.features.length)
+  const perRoute = Object.values(cijfers.woningenPerRoute).reduce((som, aantal) => som + aantal, 0)
+  assert.ok(perRoute <= cijfers.woningen)
+  assert.ok(cijfers.kansrijkeWoningen < cijfers.woningen)
 })

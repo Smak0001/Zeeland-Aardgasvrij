@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { filterNeighborhoods, findAreaAt, getMunicipalities } from '../lib/neighborhoods.js'
@@ -17,6 +18,8 @@ const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR'
 const number = new Intl.NumberFormat('nl-NL')
 const euro2 = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 })
 
+const currentRoute = useRoute()
+const router = useRouter()
 const mapElement = ref(null)
 const level = ref('buurt')
 const features = shallowRef({ buurt: [], wijk: [] })
@@ -241,7 +244,7 @@ async function loadData() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   map = L.map(mapElement.value, {
     scrollWheelZoom: false, zoomControl: false, preferCanvas: true,
   }).setView([51.49, 3.85], 9)
@@ -253,7 +256,13 @@ onMounted(() => {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).on('tileerror', () => { tileError.value = true }).addTo(map)
   visibleLayers = L.featureGroup().addTo(map)
-  loadData()
+  await loadData()
+  // 'Zoek mijn buurt' op de homepage stuurt ?locatie=1 mee: de bezoeker heeft dan al
+  // zelf op een knop geklikt, dus we vragen meteen om de locatie.
+  if (currentRoute.query.locatie === '1') {
+    router.replace({ query: {} })
+    if (!loadError.value) locateMe()
+  }
 })
 
 watch(level, () => {
