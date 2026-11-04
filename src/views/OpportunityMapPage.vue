@@ -355,7 +355,7 @@ onBeforeUnmount(() => {
               Grootste variant: {{ VARIANTEN[selected.variant] ?? selected.variant }}.
             </template>
             <template v-else>
-              <strong>Route volgens PBL:</strong> {{ strategyText(selected.variant) }}. {{ VARIANTEN[selected.variant] ?? selected.variant }}.
+              <strong>Route volgens PBL:</strong> {{ VARIANTEN[selected.variant] ?? strategyText(selected.variant) }}.
             </template>
             Kosten­score {{ score(selected.kostenScore) }} (goedkoper dan {{ score(selected.kostenScore) }}% van de Zeeuwse {{ config.plural }})
             en omvangscore {{ score(selected.omvangScore) }} (meer woningen dan {{ score(selected.omvangScore) }}%).
