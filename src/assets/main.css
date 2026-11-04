@@ -72,6 +72,8 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .map-filters select, .map-filters input { width: 100%; padding: 0.75rem; background: white; color: var(--color-ink); border: 1px solid var(--color-border); border-radius: 0.4rem; font: inherit; font-weight: 400; }
 .reset-filters, .map-load-error button { border: 1px solid var(--color-border); border-radius: 0.4rem; padding: 0.75rem 1rem; background: white; color: var(--color-ink); font: inherit; font-size: 0.85rem; cursor: pointer; }
 .reset-filters:hover, .map-load-error button:hover { background: #e3f1f5; }
+.reset-filters:disabled { opacity: 0.6; cursor: default; }
+.locate-button::before { content: "\25CE"; margin-right: 0.4rem; }
 .neighborhood-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1rem; align-items: start; }
 .neighborhood-sidebar { border: 1px solid var(--color-border); border-radius: 0.6rem; background: white; padding: 1.25rem; min-width: 0; }
 .neighborhood-sidebar h2 { font-size: 1.15rem; }

@@ -1,8 +1,8 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { filterNeighborhoods, getMunicipalities } from '../lib/neighborhoods.js'
+import { filterNeighborhoods, findAreaAt, getMunicipalities } from '../lib/neighborhoods.js'
 import {
   AANNAMES, GEWICHT_KOSTEN, GEWICHT_OMVANG, KLASSEN, MIN_WONINGEN, ROUTES, STRATEGIEEN, VARIANTEN,
   aggregeerWijken, beoordeel, bewonersIndicatie, routeVanGebied, strategieVan,
@@ -29,6 +29,8 @@ const showAll = ref(false)
 const loading = ref(true)
 const loadError = ref(false)
 const tileError = ref(false)
+const locating = ref(false)
+const locationMessage = ref('')
 
 const config = computed(() => levels[level.value])
 const currentFeatures = computed(() => features.value[level.value])
@@ -69,6 +71,7 @@ const request = new AbortController()
 const cachedLayers = { buurt: new Map(), wijk: new Map() }
 let map
 let visibleLayers
+let locationMarker
 
 function codeOf(feature) {
   return feature.properties[levels[feature.properties.niveau].code]
@@ -145,6 +148,42 @@ function resetFilters() {
   selectedCode.value = null
 }
 
+// De locatie wordt alleen in de browser gebruikt om de buurt of wijk te vinden;
+// we sturen hem nergens naartoe en vragen er pas om na een klik op de knop.
+function locateMe() {
+  if (!navigator.geolocation) {
+    locationMessage.value = 'Je browser kan je locatie niet doorgeven. Zoek je buurt op naam.'
+    return
+  }
+  locating.value = true
+  locationMessage.value = ''
+  navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+    locating.value = false
+    const feature = findAreaAt(currentFeatures.value, coords.longitude, coords.latitude)
+    if (!feature) {
+      locationMessage.value = 'Je locatie ligt buiten Zeeland of niet in een buurt met woningen.'
+      return
+    }
+    locationMarker?.remove()
+    locationMarker = L.circleMarker([coords.latitude, coords.longitude], {
+      radius: 7, color: '#fff', weight: 2, fillColor: '#111', fillOpacity: 1,
+    }).bindTooltip('Jouw locatie').addTo(map)
+    // Filters wissen zodat de gevonden buurt zeker zichtbaar is; daarna pas selecteren,
+    // anders zoomt het opnieuw tonen van alle gebieden de kaart weer uit.
+    municipalityCode.value = ''
+    route.value = ''
+    search.value = ''
+    await nextTick()
+    selectArea(feature)
+    locationMessage.value = `Je bent in ${nameOf(feature)}, ${feature.properties.gemeentenaam}.`
+  }, (error) => {
+    locating.value = false
+    locationMessage.value = error.code === error.PERMISSION_DENIED
+      ? 'Je hebt geen toestemming gegeven voor je locatie. Zoek je buurt op naam.'
+      : 'Je locatie kon niet worden bepaald. Zoek je buurt op naam.'
+  }, { timeout: 10_000, maximumAge: 300_000 })
+}
+
 async function fetchJson(file) {
   const response = await fetch(`${import.meta.env.BASE_URL}data/${file}`, {
     signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]),
@@ -206,6 +245,8 @@ onMounted(() => {
   map = L.map(mapElement.value, {
     scrollWheelZoom: false, zoomControl: false, preferCanvas: true,
   }).setView([51.49, 3.85], 9)
+  // Leaflet zet standaard een vlag voor de naam; we houden alleen de naamsvermelding.
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>')
   L.control.zoom({ position: 'topright', zoomInTitle: 'Inzoomen', zoomOutTitle: 'Uitzoomen' }).addTo(map)
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -217,6 +258,7 @@ onMounted(() => {
 
 watch(level, () => {
   selectedCode.value = null
+  locationMessage.value = ''
   search.value = ''
   showAll.value = false
 })
@@ -272,6 +314,9 @@ onBeforeUnmount(() => {
         Zoek op {{ config.singular }}naam
         <input id="area-search" v-model="search" type="search" :placeholder="level === 'buurt' ? 'Bijvoorbeeld Griffioen' : 'Bijvoorbeeld Mortiere'" :disabled="loading || loadError">
       </label>
+      <button type="button" class="reset-filters locate-button" :disabled="loading || loadError || locating" @click="locateMe">
+        {{ locating ? 'Locatie zoeken…' : 'Mijn locatie' }}
+      </button>
       <button v-if="hasFilters" type="button" class="reset-filters" @click="resetFilters">Filters wissen</button>
     </div>
 
@@ -283,6 +328,7 @@ onBeforeUnmount(() => {
     <p v-else class="map-data-status" role="status">
       {{ filtered.length }} {{ config.plural }} gevonden<template v-if="route"> waar {{ routeLabel(route).toLowerCase() }} de goedkoopste route is</template>
     </p>
+    <p v-if="locationMessage" class="map-data-status" role="status">{{ locationMessage }}</p>
     <p v-if="route === 'hybride' && !loading" class="route-note">
       Let op: een hybride warmtepomp stookt op koude dagen bij met groen gas. PBL kiest deze route alleen als de buurt groen gas toegewezen krijgt, en groen gas is schaars.
     </p>
