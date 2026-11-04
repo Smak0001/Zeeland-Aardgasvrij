@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { filterNeighborhoods, getMunicipalities } from '../src/lib/neighborhoods.js'
 
-const collection = JSON.parse(readFileSync(new URL('../public/data/zeeland-buurten-2025.geojson', import.meta.url)))
+const collection = JSON.parse(readFileSync(new URL('../public/data/zeeland-buurten-2026.geojson', import.meta.url)))
 const features = collection.features
 
 test('de bron bevat unieke buurtgrenzen uit alle dertien Zeeuwse gemeenten', () => {
   assert.equal(collection.type, 'FeatureCollection')
-  assert.equal(collection.metadata.year, 2025)
+  assert.equal(collection.metadata.year, 2026)
   assert.deepEqual(getMunicipalities(features).map(({ code }) => code).sort(), [
     'GM0654', 'GM0664', 'GM0677', 'GM0678', 'GM0687', 'GM0703', 'GM0715',
     'GM0716', 'GM0717', 'GM0718', 'GM1676', 'GM1695', 'GM1714',

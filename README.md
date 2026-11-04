@@ -20,7 +20,7 @@ worden tijdens het ontwikkelen direct zichtbaar.
 - `src/views/HomePage.vue`: de korte introductie op de homepage.
 - `src/views/OpportunityMapPage.vue`: de interactieve kaart voor aardgasvrije wijken.
 - `src/lib/neighborhoods.js`: zoeken op buurtnaam en filteren op gemeente.
-- `public/data/zeeland-buurten-2025.geojson`: echte CBS-buurtgrenzen voor Zeeland.
+- `public/data/zeeland-buurten-2026.geojson`: echte CBS-buurtgrenzen voor Zeeland.
 - `src/router.js`: de routes tussen de pagina’s; hash-routes werken ook op statische hosting.
 - `src/assets/main.css`: de algemene styling, ook voor mobiel.
 - `src/main.js`: start de Vue-app.
@@ -36,7 +36,7 @@ Er zijn nog geen kansbeoordelingen gekoppeld.
 
 ## Buurtgrenzen
 
-De kaart gebruikt de [CBS Wijk- en Buurtkaart 2025 via PDOK](https://api.pdok.nl/cbs/wijken-en-buurten-2025/ogc/v1).
+De kaart gebruikt de [CBS Wijk- en Buurtkaart 2026 via PDOK](https://api.pdok.nl/cbs/wijken-en-buurten-2026/ogc/v1).
 De snapshot bevat de buurten van de dertien Zeeuwse gemeenten, zonder watergebieden.
 Alleen grenzen, namen en gebiedscodes worden opgeslagen; coördinaten worden afgerond
 op zes decimalen. Dit zijn geen berekende aardgasvrij-kansen.

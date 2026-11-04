@@ -68,7 +68,7 @@ async function loadNeighborhoods() {
   loading.value = true
   loadError.value = false
   try {
-    const response = await fetch(`${import.meta.env.BASE_URL}data/zeeland-buurten-2025.geojson`, {
+    const response = await fetch(`${import.meta.env.BASE_URL}data/zeeland-buurten-2026.geojson`, {
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]),
     })
     if (!response.ok) throw new Error('Buurtgrenzen niet beschikbaar')
@@ -192,6 +192,6 @@ onBeforeUnmount(() => {
         </div>
       </aside>
     </div>
-    <p class="map-source">Buurtgrenzen: <a href="https://api.pdok.nl/cbs/wijken-en-buurten-2025/ogc/v1">CBS Wijk- en Buurtkaart 2025 via PDOK</a>.</p>
+    <p class="map-source">Buurtgrenzen: <a href="https://api.pdok.nl/cbs/wijken-en-buurten-2026/ogc/v1">CBS Wijk- en Buurtkaart 2026 via PDOK</a>.</p>
   </section>
 </template>
