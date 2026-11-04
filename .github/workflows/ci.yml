@@ -9,6 +9,42 @@ permissions:
   contents: read
 
 jobs:
+  test-and-build:
+    name: Tests draaien en productiebuild maken
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v6
+
+      - name: Node.js instellen
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Afhankelijkheden installeren
+        run: npm ci
+
+      # Controleert de kansberekening en of de kaartdata compleet is
+      # (elke buurt op de kaart heeft een regel in zeeland-kansen.json).
+      - name: Tests draaien
+        run: npm test
+
+      - name: Productiebuild maken
+        run: npm run build
+
+      - name: Controleren of de kaartdata in de build zit
+        shell: bash
+        run: |
+          for file in zeeland-buurten-2026.geojson zeeland-wijken-2026.geojson zeeland-kansen.json; do
+            if [ ! -s "dist/data/$file" ]; then
+              echo "dist/data/$file ontbreekt of is leeg."
+              exit 1
+            fi
+          done
+          echo "Alle databestanden staan in de build."
+
   start-app:
     name: Dependencies installeren en devserver starten
     runs-on: ubuntu-latest
