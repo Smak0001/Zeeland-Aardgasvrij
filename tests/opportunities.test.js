@@ -144,3 +144,11 @@ test('de kerncijfers kloppen met het kansenbestand', () => {
   assert.ok(perRoute <= cijfers.woningen)
   assert.ok(cijfers.kansrijkeWoningen < cijfers.woningen)
 })
+
+test('de mini-kaart op de homepage tekent elke wijk', () => {
+  const svg = readFileSync(new URL('../public/data/zeeland-kansen-preview.svg', import.meta.url), 'utf8')
+  const wijken = JSON.parse(readFileSync(new URL('../public/data/zeeland-wijken-2026.geojson', import.meta.url)))
+  assert.match(svg, /^<svg /)
+  assert.equal(svg.match(/<path /g).length, wijken.features.length)
+  assert.ok(svg.length < 200_000, 'de mini-kaart moet klein blijven voor de homepage')
+})

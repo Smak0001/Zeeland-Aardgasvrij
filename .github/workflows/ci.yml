@@ -37,7 +37,7 @@ jobs:
       - name: Controleren of de kaartdata in de build zit
         shell: bash
         run: |
-          for file in zeeland-buurten-2026.geojson zeeland-wijken-2026.geojson zeeland-kansen.json; do
+          for file in zeeland-buurten-2026.geojson zeeland-wijken-2026.geojson zeeland-kansen.json zeeland-kansen-preview.svg; do
             if [ ! -s "dist/data/$file" ]; then
               echo "dist/data/$file ontbreekt of is leeg."
               exit 1

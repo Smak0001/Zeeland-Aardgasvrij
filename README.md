@@ -54,6 +54,9 @@ op (een ZIP per gemeente, in `data/startanalyse/2026/`, niet in git) en schrijft
 `public/data/zeeland-kansen.json`. Met `--vernieuw` worden de ZIP's opnieuw gedownload
 (`npm run data:kansen -- --vernieuw`). Het script heeft `unzip` nodig.
 
+Maak daarna de mini-kaart voor de homepage opnieuw met `npm run data:preview`. Die tekent
+de wijken, gekleurd per kansklasse, in `public/data/zeeland-kansen-preview.svg` (ongeveer 100 kB).
+
 Hoe de kansscore, de klassen, de wijkcijfers en de bewonersindicatie precies worden
 berekend, met welke PBL-velden en welke aannames, staat in
 [`docs/BEREKENING.md`](docs/BEREKENING.md). Op de kaartpagina staat een eenvoudige
